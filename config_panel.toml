@@ -1,0 +1,50 @@
+#:schema https://github.com/YunoHost/apps/raw/main/schemas/config_panel.v1.schema.json
+
+version = "1.0"
+
+[connection]
+name.en = "Mesh radio connection"
+name.fr = "Connexion au radio mesh"
+services = ["__APP__"]
+help.en = "Switching between TCP and serial transport is not supported from this panel (it needs conditional logic beyond a simple per-field bind); edit /etc/__APP__/dashboard.env by hand and restart the service, or reinstall with the other transport."
+
+    [connection.mesh_host]
+    ask.en = "Meshtastic radio host or IP (TCP mode)"
+    ask.fr = "Hôte ou IP du radio Meshtastic (mode TCP)"
+    type = "string"
+    optional = true
+    bind = "MESH_GATEWAY_HOST:/etc/__APP__/dashboard.env"
+
+    [connection.mesh_tcp_port]
+    ask.en = "Meshtastic radio TCP port"
+    ask.fr = "Port TCP du radio Meshtastic"
+    type = "number"
+    bind = "MESH_GATEWAY_PORT:/etc/__APP__/dashboard.env"
+
+    [connection.mesh_serial_path]
+    ask.en = "Meshtastic radio serial device path (serial mode)"
+    ask.fr = "Chemin du périphérique série du radio Meshtastic (mode série)"
+    type = "string"
+    optional = true
+    bind = "MESH_DASH_MESH_PORT:/etc/__APP__/dashboard.env"
+
+[security]
+name.en = "Security"
+name.fr = "Sécurité"
+services = ["__APP__"]
+
+    [security.private_mode]
+    ask.en = "Restrict public chat/message API surfaces"
+    ask.fr = "Restreindre les API de chat/messages publics"
+    type = "boolean"
+    yes = "1"
+    no = "0"
+    bind = "MESH_DASH_PRIVATE_MODE:/etc/__APP__/dashboard.env"
+
+    [security.api_token]
+    ask.en = "API token for write endpoints"
+    ask.fr = "Jeton d'API pour les points d'écriture"
+    type = "password"
+    optional = true
+    redact = true
+    bind = "MESH_DASH_API_TOKEN:/etc/__APP__/dashboard.env"

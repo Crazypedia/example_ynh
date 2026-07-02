@@ -2,135 +2,138 @@
 
 packaging_format = 2
 
-id = "example"
-name = "Example app"
-description.en = "Explain in *a few (10~15) words* the purpose of the app or what it actually does (it is meant to give a rough idea to users browsing a catalog of 100+ apps)"
-description.fr = "Expliquez en *quelques* (10~15) mots l'utilité de l'app ou ce qu'elle fait (l'objectif est de donner une idée grossière pour des utilisateurs qui naviguent dans un catalogue de 100+ apps)"
+id = "meshyface"
+name = "Meshyface"
+description.en = "Chat-first web dashboard for a Meshtastic mesh radio, with map, topology and history"
+description.fr = "Tableau de bord web axé chat pour un radio maillé Meshtastic, avec carte, topologie et historique"
 
-version = "1.0~ynh1"
+version = "0.1.0~ynh1"
 
-maintainers = ["johndoe"]
+maintainers = ["crazypedia"]
 
 [upstream]
-# NB: Only the "license" key is mandatory. Remove entries for which there's no relevant data
-license = "free" # you can see the available licenses identifiers list here: https://spdx.org/licenses/
-website = "https://example.com"
-demo = "https://demo.example.com"
-admindoc = "https://doc.yunohost.org/dev/packaging/"
-userdoc = "https://yunohost.org/apps"
-code = "https://some.forge.com/example/example"
-# FIXME: optional but recommended if relevant, this is meant to contain the Common Platform Enumeration, which is
-# sort of a standard id for applications defined by the NIST. In particular, YunoHost may use this is in the future
-# to easily track CVE (=security reports) related to apps. The CPE may be obtained by searching here:
-# https://nvd.nist.gov/products/cpe/search.
-# For example, for Nextcloud, the CPE is 'cpe:2.3:a:nextcloud:nextcloud' (no need to include the version number)
-cpe = "???"
-
-# FIXME: optional but recommended (or remove if irrelevant / not applicable).
-# This is meant to be an URL where people can financially support this app, especially when its development is based
-# on volunteers and/or financed by its community. YunoHost may later advertise it in the webadmin.
-fund = "???"
+license = "GPL-3.0-only"
+code = "https://github.com/crazypedia/meshyface"
+userdoc = "https://github.com/crazypedia/meshyface/blob/main/README.md"
+admindoc = "https://github.com/crazypedia/meshyface/blob/main/docs/maintenance.md"
 
 [integration]
 yunohost = ">= 12.1.17"
 helpers_version = "2.1"
-# FIXME: can be replaced by a list of supported archs using the dpkg --print-architecture nomenclature (amd64/i386/armhf/arm64), for example: ["amd64", "i386"]
 architectures = "all"
 multi_instance = true
 
-# FIXME: replace with true, false, or "not_relevant".
-# Not to confuse with the "sso" key: the "ldap" key corresponds to wether or not a user *can* login on the app using
-# its YunoHost credentials.
-ldap = "?"
+# Meshyface has no login page or user database of its own: access is gated
+# purely by the YunoHost permission chosen below, not by app-level auth
+# that could integrate with LDAP or SSO.
+ldap = "not_relevant"
+sso = "not_relevant"
 
-# FIXME: replace with true, false, or "not_relevant".
-# Not to confuse with the "ldap" key: the "sso" key corresponds to wether or not a user is *automatically logged-in*
-# on the app when logged-in on the YunoHost portal.
-sso = "?"
-
-# FIXME: replace with an **estimate** minimum disk and RAM requirements. e.g. 20M, 400M, 1G...
-disk = "50M"
-ram.build = "50M"
-ram.runtime = "50M"
+disk = "400M"
+ram.build = "200M"
+ram.runtime = "150M"
 
 [install]
     [install.domain]
-    # this is a generic question - ask strings are automatically handled by YunoHost's core
     type = "domain"
-
-    [install.path]
-    # this is a generic question - ask strings are automatically handled by YunoHost's core
-    type = "path"
-    default = "/example"
+    # Meshyface's single-page UI hardcodes root-relative asset/API paths
+    # (no --base-path style option upstream), so it can only be installed
+    # at the domain root, not under a subpath.
+    full_domain = true
 
     [install.init_main_permission]
-    # this is a generic question - ask strings are automatically handled by YunoHost's core
-    # This won't be saved as setting and will instead be used to initialize the SSOwat permission
     type = "group"
-    default = "visitors"
+    # Chat, node locations and history are visible to anyone with access;
+    # default to signed-in users rather than the public internet.
+    default = "all_users"
 
-    [install.language]
-    ask.en = "Choose the application language"
-    ask.fr = "Choisissez la langue de l'application"
+    [install.mesh_transport]
+    ask.en = "How is the Meshtastic radio reachable?"
+    ask.fr = "Comment le radio Meshtastic est-il joignable ?"
     type = "select"
-    choices = ["fr", "en"]
-    default = "fr"
+    choices = ["tcp", "serial"]
+    default = "tcp"
+    help.en = "'tcp' for a radio reachable over Wi-Fi/Ethernet (recommended for a VM/LXC host, usual port 4403). 'serial' for a radio plugged into this host over USB."
+    help.fr = "« tcp » pour un radio joignable via Wi-Fi/Ethernet (recommandé pour un hôte VM/LXC, port habituel 4403). « serial » pour un radio branché en USB sur cet hôte."
 
-    [install.admin]
-    # this is a generic question - ask strings are automatically handled by YunoHost's core
-    type = "user"
+    [install.mesh_host]
+    ask.en = "Meshtastic radio host or IP (TCP mode)"
+    ask.fr = "Hôte ou IP du radio Meshtastic (mode TCP)"
+    type = "string"
+    default = ""
+    optional = true
+    example = "192.168.1.42"
+    help.en = "Only used when the transport above is 'tcp'. Leave empty for serial mode."
+    help.fr = "Utilisé uniquement si le mode de connexion ci-dessus est « tcp ». Laisser vide en mode série."
 
-    [install.password]
-    # this is a generic question - ask strings are automatically handled by YunoHost's core
-    # Note that user-provided passwords questions are not automatically saved as setting
-    help.en = "Use the help field to add an information for the admin about this question."
-    help.fr = "Utilisez le champ aide pour ajouter une information à l'intention de l'administrateur à propos de cette question."
+    [install.mesh_tcp_port]
+    ask.en = "Meshtastic radio TCP port"
+    ask.fr = "Port TCP du radio Meshtastic"
+    type = "number"
+    default = 4403
+
+    [install.mesh_serial_path]
+    ask.en = "Meshtastic radio serial device path (serial mode)"
+    ask.fr = "Chemin du périphérique série du radio Meshtastic (mode série)"
+    type = "string"
+    default = "/dev/ttyACM0"
+    help.en = "Only used when the transport above is 'serial'. Prefer a stable /dev/serial/by-id/... path over /dev/ttyACM0 if this host may have other USB serial devices."
+    help.fr = "Utilisé uniquement en mode série. Préférez un chemin stable /dev/serial/by-id/... plutôt que /dev/ttyACM0 si cet hôte peut avoir d'autres périphériques série USB."
+
+    [install.private_mode]
+    ask.en = "Restrict public chat/message API surfaces?"
+    ask.fr = "Restreindre les API de chat/messages publics ?"
+    type = "boolean"
+    default = false
+    help.en = "Hides public chat slices and blocks some public endpoints, independently of the YunoHost permission above. Useful for more sensitive deployments."
+    help.fr = "Masque les portions de chat publiques et bloque certains points d'accès publics, indépendamment de la permission YunoHost ci-dessus."
+
+    [install.api_token]
+    ask.en = "API token for write endpoints (optional)"
+    ask.fr = "Jeton d'API pour les points d'écriture (optionnel)"
     type = "password"
+    optional = true
+    help.en = "If set, write endpoints (chat, settings changes, ...) require this token via 'Authorization: Bearer' or 'X-API-Token'. Leave empty to rely only on the YunoHost permission above."
+    help.fr = "Si renseigné, les points d'écriture (chat, changements de réglages, ...) exigent ce jeton via « Authorization: Bearer » ou « X-API-Token ». Laisser vide pour ne se reposer que sur la permission YunoHost ci-dessus."
+
+    [install.bbs_enable]
+    ask.en = "Enable the BBS/profile workspace?"
+    ask.fr = "Activer l'espace BBS/profil ?"
+    type = "boolean"
+    default = false
+    help.en = "BBS and file transfer can consume significant mesh airtime. Enabling this also acknowledges that tradeoff on Meshyface's behalf (equivalent to --accept-file-transfer-traffic-disclaimer)."
+    help.fr = "Le BBS et le transfert de fichiers peuvent consommer beaucoup de temps d'antenne mesh. Activer cette option équivaut aussi à accepter ce compromis pour Meshyface (--accept-file-transfer-traffic-disclaimer)."
+
+    [install.games_enable]
+    ask.en = "Enable the playable Zork console and mesh bot?"
+    ask.fr = "Activer la console Zork jouable et le bot mesh ?"
+    type = "boolean"
+    default = false
 
 [resources]
-    # See the packaging documentation for the full set
-    # of explanation regarding the behavior and properties for each of those
-
-    [resources.sources]
-
     [resources.sources.main]
-    # This will pre-fetch the asset which can then be deployed during the install/upgrade scripts with :
-    #    ynh_setup_source --dest_dir="$install_dir"
-    # You can also define other assets than "main" and add --source_id="foobar" in the previous command
-    url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.tar.gz"
-    sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-
-    # These infos are used by https://github.com/YunoHost/apps_tools/blob/main/autoupdate_app_sources/autoupdate_app_sources.py
-    # to auto-update the previous asset urls and sha256sum + manifest version
-    # assuming the upstream's code repo is on github and relies on tags or releases
-    # See the 'sources' resource documentation for more details
-
-    # autoupdate.strategy = "latest_github_tag"
+    # Pinned to a commit on the crazypedia/meshyface main branch: upstream
+    # has not cut a tagged release yet. Re-pin to a tag once one exists.
+    url = "https://github.com/crazypedia/meshyface/archive/526fc3a228f64dea3800b88f5c8140fee8c50023.tar.gz"
+    sha256 = "56f7c01b57ad1dcf146b027733c0cc36535a04a45e38967de49a34bbf147ae26"
 
     [resources.system_user]
-    # This will provision/deprovision a unix system user
+    # install/upgrade/restore chown files to $app:$app and the systemd unit
+    # runs as $app, so this resource is required.
 
     [resources.install_dir]
-    # This will create/remove the install dir as /var/www/$app
-    # and store the corresponding setting $install_dir
+    # /var/www/$app -> $install_dir; holds the source checkout and venv.
 
     [resources.data_dir]
-    # This will create/remove the data dir as /home/yunohost.app/$app
-    # and store the corresponding setting $data_dir
+    # /home/yunohost.app/$app -> $data_dir; holds the SQLite history DB and
+    # theme settings JSON. Not world/www-data readable; only $app can read it.
 
     [resources.permissions]
-    # This will configure SSOwat permission for $domain/$path/
-    # The initial allowed group of user is configured via the init_main_permission question (public=visitors, private=all_users)
     main.url = "/"
 
     [resources.ports]
-    # This will pick a random port for reverse-proxying and store it as the $port setting
+    # Internal port meshdash's HTTP server binds to on 127.0.0.1; nginx
+    # reverse-proxies to it. Not meant to be exposed externally.
 
     [resources.apt]
-    # This will automatically install/uninstall the following apt packages
-    # and implicitly define the $phpversion setting as 8.0 (if phpX.Y-foobar dependencies are listed)
-    packages = "mariadb-server, deb1, deb2, php8.3-foo, php8.3-bar"
-
-    [resources.database]
-    # This will automatically provision/deprovison a MySQL DB and store the corresponding credentials in settings $db_user, $db_name, $db_pwd
-    type = "mysql"
+    packages = "python3, python3-venv"

@@ -1,31 +1,42 @@
 [Unit]
-Description=Small description of the service
-After=network.target
+Description=Meshyface Meshtastic web dashboard
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=__APP__
 Group=__APP__
-WorkingDirectory=__INSTALL_DIR__/
-ExecStart=__INSTALL_DIR__/script
+# Needed for USB serial radio access (e.g. /dev/ttyACM0); harmless when
+# the app is configured for TCP-only radio access.
+SupplementaryGroups=dialout
+WorkingDirectory=__INSTALL_DIR__
+EnvironmentFile=/etc/__APP__/dashboard.env
+ExecStart=__INSTALL_DIR__/venv/bin/python __INSTALL_DIR__/mesh_dashboard.py --http-host 127.0.0.1 --http-port __PORT__
+Restart=always
+RestartSec=2
+KillSignal=SIGINT
+TimeoutStopSec=10
 StandardOutput=append:/var/log/__APP__/__APP__.log
 StandardError=inherit
 
-### Depending on specificities of your service/app, you may need to tweak these
-### .. but this should be a good baseline
-# Sandboxing options to harden security
-# Details for these options: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+### Sandboxing options to harden security
+### Details for these options: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+### NB: no ProtectHome= and no PrivateDevices=/DevicePolicy=closed here:
+### $data_dir lives under /home/yunohost.app/$app (ProtectHome would mask
+### it before ReadWritePaths= is applied) and serial radio access needs
+### real /dev device nodes.
 NoNewPrivileges=yes
 PrivateTmp=yes
-PrivateDevices=yes
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+ProtectSystem=strict
+ReadWritePaths=__DATA_DIR__ /var/log/__APP__
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 RestrictNamespaces=yes
 RestrictRealtime=yes
-DevicePolicy=closed
+DevicePolicy=auto
 ProtectClock=yes
 ProtectHostname=yes
 ProtectProc=invisible
-ProtectSystem=full
 ProtectControlGroups=yes
 ProtectKernelModules=yes
 ProtectKernelTunables=yes
@@ -33,7 +44,7 @@ LockPersonality=yes
 SystemCallArchitectures=native
 SystemCallFilter=~@clock @debug @module @mount @obsolete @reboot @setuid @swap @cpu-emulation @privileged
 
-# Denying access to capabilities that should not be relevant for webapps
+# Denying access to capabilities that should not be relevant for this app
 # Doc: https://man7.org/linux/man-pages/man7/capabilities.7.html
 CapabilityBoundingSet=~CAP_RAWIO CAP_MKNOD
 CapabilityBoundingSet=~CAP_AUDIT_CONTROL CAP_AUDIT_READ CAP_AUDIT_WRITE
